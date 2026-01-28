@@ -18,12 +18,12 @@ DRUG_API_NUM_OF_ROWS = 100
 DRUG_APPROVAL_API_BASE_URL = "http://apis.data.go.kr/1471000/DrugPrdtPrmsnInfoService07/getDrugPrdtPrmsnDtlInq06"
 
 # LLM Configuration
-CLASSIFIER_MODEL = "gpt-4.1-mini"
-LLM_MODEL = "gpt-4.1"
+CLASSIFIER_MODEL = "gpt-4.1-nano"
+LLM_MODEL = "gpt-4.1-nano"
 LLM_TEMPERATURE = 0.0
 
 # Search Configuration
-SEARCH_LIMIT = 5
+SEARCH_LIMIT = 3
 
 # LangSmith Tracing
 os.environ["LANGCHAIN_TRACING_V2"] = "true"

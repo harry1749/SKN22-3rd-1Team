@@ -3,10 +3,12 @@ __pycache__/
 *.pyc
 .ipynb_checkpoints/
 .streamlit/
-data/raw
+data/
 .claude/
 z_git_diff.md
 z_structure.md
 z_warning.md
 z_temp.md
+z_plan.md
 benchmark/
+sql_samples.ipynb

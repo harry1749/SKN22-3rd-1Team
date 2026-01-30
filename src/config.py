@@ -32,7 +32,7 @@ LLM_MODEL = "gpt-4.1-mini"
 LLM_TEMPERATURE = 0.0
 
 # Search Configuration
-SEARCH_LIMIT = 5
+SEARCH_LIMIT = 3
 
 # LangSmith Tracing
 os.environ["LANGCHAIN_TRACING_V2"] = "true"

@@ -11,24 +11,61 @@ st.set_page_config(
     layout="wide",
 )
 
-# --- [추가 부분 1: 하얀색 박스 디자인 정의] ---
-# 이 CSS 코드가 있어야 'chat-bubble'이라는 하얀 상자를 그릴 수 있습니다.
+
+# --- [수정 부분 1: CSS 스타일] ---
 st.markdown("""
     <style>
     .chat-bubble {
-        background-color: white;  /* 배경색: 하얀색 */
-        padding: 12px 18px;       /* 안쪽 여백 */
-        border-radius: 15px;      /* 모서리 둥글게 */
-        border: 1px solid #d1d1d1; /* 연한 회색 테두리 */
-        display: inline-block;    /* 내용 길이에 맞춰 상자 크기 조절 */
-        color: black;             /* 글자색: 검정 */
-        font-size: 15px;          /* 글자 크기 */
-        line-height: 1.6;         /* 줄 간격 */
-        white-space: pre-wrap;    /* 줄바꿈(Enter) 유지 */
-        box-shadow: 2px 2px 5px rgba(0,0,0,0.05); /* 미세한 그림자 */
+        background-color: white;
+        padding: 15px 20px;
+        border-radius: 15px;
+        border: 1px solid #e0e0e0;
+        display: inline-block;
+        color: black;
+        font-family: sans-serif;
+        white-space: pre-wrap; 
+        box-shadow: 1px 1px 5px rgba(0,0,0,0.05);
+        word-break: break-all;
+        line-height: 1.6; 
     }
+    .user-message-group {
+        display: flex;
+        align-items: flex-start;
+        justify-content: flex-end; 
+        gap: 10px;
+        width: 100%;
+        margin-bottom: 20px;
+    }
+    .user-icon {
+        width: 35px;
+        height: 35px;
+        background-color: #FF4B4B;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        order: 2; 
+    }
+    .user-bubble-container { order: 1; }
     </style>
 """, unsafe_allow_html=True)
+
+
+# --- [수정 부분 2: 가공 함수 보강] ---
+def format_answer(text):
+    """
+    텍스트에 이미 줄바꿈이 섞여 있어도 강제로 '성분명:' 앞에 
+    빈 줄을 만들어주는 더 강력한 로직입니다.
+    """
+    if not text:
+        return text
+    
+    # 1. 모든 '성분명:' 앞에 줄바꿈 두 개(\n\n)를 넣습니다.
+    text = text.replace("성분명:", "\n\n성분명:")
+    
+    # 2. 맨 처음에 오는 성분명 때문에 생긴 맨 위의 빈 줄만 분석 결과로 변경.
+    return f'💉분석 결과\n {text}'
 
 
 # 세션 상태 초기화
@@ -149,65 +186,69 @@ with st.sidebar:
 st.title("💊 의약품 정보 Q&A")
 st.caption("식품의약품안전처 e약은요 + 허가정보 데이터 기반 시스템")
 
-# --- [추가 부분 2: 대화 기록 표시 시 좌우 배치 및 하얀 상자 적용] ---
+
+# --- [수정 부분 3: 대화 기록 표시 시 format_answer 적용] ---
 for message in st.session_state.messages:
     if message["role"] == "user":
-        # 사용자 질문은 오른쪽(col2)에 배치
-        col1, col2 = st.columns([1, 4])
-        with col2:
-            with st.chat_message("user"):
-                st.text(message["content"]) # 기존 스타일 유지
+        st.markdown(f'''
+            <div class="user-message-group">
+                <div class="user-icon">👤</div>
+                <div class="user-bubble-container">
+                    <div class="chat-bubble">{message["content"]}</div>
+                </div>
+            </div>
+        ''', unsafe_allow_html=True)
     else:
-        # AI 답변은 왼쪽(col1)에 배치하고 '하얀색 박스' 입히기
-        col1, col2 = st.columns([4, 1])
-        with col1:
-            with st.chat_message("assistant"):
-                # div 태그를 사용하여 하얀 상자 스타일 적용
-                st.markdown(f'<div class="chat-bubble">{message["content"]}</div>', unsafe_allow_html=True)
-                if "sources" in message and message["sources"]:
-                    with st.expander("📋 참고 자료 보기"):
-                        for src in message["sources"]:
-                            st.text(f"{src['item_name']} | 업체: {src['entp_name']} | 코드: {src['item_seq']}")
-
-# --- [추가 부분 3: 채팅 입력 및 답변 생성 시 하얀 상자 적용] ---
-if user_input := st.chat_input("의약품에 대해 궁금한 점을 질문해주세요..."):
-    # 1. 사용자 메시지 기록 및 표시 (오른쪽)
-    st.session_state.messages.append({"role": "user", "content": user_input})
-    col1, col2 = st.columns([1, 4])
-    with col2:
-        with st.chat_message("user"):
-            st.text(user_input)
-
-    # 2. 답변 생성 및 표시 (왼쪽)
-    col1, col2 = st.columns([4, 1])
-    with col1:
         with st.chat_message("assistant"):
-            with st.spinner("정보를 검색하고 있습니다..."):
-                prepared = prepare_context(user_input)
-                source_drugs = prepared["source_drugs"]
+            # 출력 전에 텍스트를 가공하여 간격을 벌립니다.
+            formatted_content = format_answer(message["content"])
+            st.markdown(f'<div class="chat-bubble">{formatted_content}</div>', unsafe_allow_html=True)
+            if "sources" in message and message["sources"]:
+                with st.expander("📋 참고 자료 보기"):
+                    for src in message["sources"]:
+                        st.text(f"{src['item_name']} | 업체: {src['entp_name']} | 코드: {src['item_seq']}")
 
-            answer_placeholder = st.empty()
-            full_answer = ""
 
-            # 스트리밍 답변 시 실시간으로 하얀 상자에 글자 채우기
-            for chunk in stream_answer(prepared):
-                full_answer += chunk
-                answer_placeholder.markdown(f'<div class="chat-bubble">{full_answer}▌</div>', unsafe_allow_html=True)
-            
-            # 최종 답변 표시
-            answer_placeholder.markdown(f'<div class="chat-bubble">{full_answer}</div>', unsafe_allow_html=True)
+# --- [수정 부분 4: 채팅 입력 처리 시 format_answer 적용] ---
+if user_input := st.chat_input("의약품에 대해 궁금한 점을 질문해주세요..."):
+    st.session_state.messages.append({"role": "user", "content": user_input})
+    
+    st.markdown(f'''
+        <div class="user-message-group">
+            <div class="user-icon">👤</div>
+            <div class="user-bubble-container">
+                <div class="chat-bubble">{user_input}</div>
+            </div>
+        </div>
+    ''', unsafe_allow_html=True)
 
-            # 출처 및 검색 과정 표시
-            if prepared.get("category") and prepared.get("keyword"):
-                st.caption(f"🔍 검색: {prepared['category']} → \"{prepared['keyword']}\"")
+    with st.chat_message("assistant"):
+        with st.spinner("정보를 검색하고 있습니다..."):
+            prepared = prepare_context(user_input)
+            source_drugs = prepared["source_drugs"]
 
-            sources = []
-            if source_drugs:
-                with st.expander("📋 관련 의약품 정보"):
-                    for drug in source_drugs:
-                        source_info = {"item_name": drug.get("item_name", ""), "entp_name": drug.get("entp_name", ""), "item_seq": drug.get("item_seq", ""), "main_item_ingr": drug.get("main_item_ingr", "")}
-                        sources.append(source_info)
-                        st.text(f"{source_info['item_name']} | 업체: {source_info['entp_name']}")
+        answer_placeholder = st.empty()
+        full_answer = ""
 
-    # 메시지 저장
+        for chunk in stream_answer(prepared):
+            full_answer += chunk
+            # 스트리밍 중에도 실시간으로 줄바꿈 가공을 적용합니다.
+            display_stream = format_answer(full_answer)
+            answer_placeholder.markdown(f'<div class="chat-bubble">{display_stream}▌</div>', unsafe_allow_html=True)
+        
+        # 최종 답변 확정
+        final_answer = format_answer(full_answer)
+        answer_placeholder.markdown(f'<div class="chat-bubble">{final_answer}</div>', unsafe_allow_html=True)
+
+        if prepared.get("category") and prepared.get("keyword"):
+            st.caption(f"🔍 검색: {prepared['category']} → \"{prepared['keyword']}\"")
+
+        sources = []
+        if source_drugs:
+            with st.expander("📋 관련 의약품 정보"):
+                for drug in source_drugs:
+                    source_info = {"item_name": drug.get("item_name", ""), "entp_name": drug.get("entp_name", ""), "item_seq": drug.get("item_seq", ""), "main_item_ingr": drug.get("main_item_ingr", "")}
+                    sources.append(source_info)
+                    st.text(f"{source_info['item_name']} | 업체: {source_info['entp_name']}")
+
     st.session_state.messages.append({"role": "assistant", "content": full_answer, "sources": sources})

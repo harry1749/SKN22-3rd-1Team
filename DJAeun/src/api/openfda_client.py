@@ -47,7 +47,49 @@ class OpenFDAClient:
 
         url = self._build_url(OPENFDA_LABEL_ENDPOINT, search_query)
         data = self._make_request(url)
-        return data.get("results", [])
+        results = data.get("results", [])
+
+        # Homeopathy 필터링
+        filtered_results = []
+        for result in results:
+            is_homeopathic = False
+            
+            # 1. openfda.product_type 확인
+            openfda = result.get("openfda", {})
+            if not openfda:
+                # OpenFDA 메타데이터가 없는 경우 (매칭되지 않은 비승인 약물 등)
+                is_homeopathic = True
+            
+            if not is_homeopathic:
+                product_types = openfda.get("product_type", [])
+                for pt in product_types:
+                    pt_lower = pt.lower()
+                    if "homeopathic" in pt_lower or "unapproved homeopathic" in pt_lower:
+                        is_homeopathic = True
+                        break
+            
+            # 2. unapproved_pharmaceutical 필드 확인 (OpenFDA flag)
+            # 및 Application Number 부재 확인 (Sabal Serrulata 등 비승인 약물 필터링)
+            if not is_homeopathic:
+                # HUMAN OTC DRUG 또는 HUMAN PRESCRIPTION DRUG인데 application_number가 없으면 승인받지 않은(unapproved) 제품일 확률 높음
+                is_drug = any("human" in pt.lower() and "drug" in pt.lower() for pt in product_types)
+                if is_drug and not openfda.get("application_number"):
+                     is_homeopathic = True
+
+            # 3. spl_product_data_elements 확인
+            if not is_homeopathic:
+                spl_elements = result.get("spl_product_data_elements", [])
+                if isinstance(spl_elements, list):
+                    for elem in spl_elements:
+                        elem_lower = elem.lower()
+                        if "homeopathic" in elem_lower or "unapproved homeopathic" in elem_lower:
+                            is_homeopathic = True
+                            break
+            
+            if not is_homeopathic:
+                filtered_results.append(result)
+
+        return filtered_results
 
 
 def search_by_brand_name(brand_name: str) -> list[dict]:

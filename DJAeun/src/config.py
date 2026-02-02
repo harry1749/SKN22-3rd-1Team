@@ -14,7 +14,7 @@ OPENFDA_BASE_URL = "https://api.fda.gov/drug"
 OPENFDA_LABEL_ENDPOINT = "/label.json"
 
 # Search Configuration
-SEARCH_LIMIT = 5
+SEARCH_LIMIT = 20
 
 # LLM Configuration
 CLASSIFIER_MODEL = "gpt-4.1-nano"

@@ -3,7 +3,7 @@ import json
 from typing import Generator
 from langchain_openai import ChatOpenAI
 
-from src.chain.prompts_unified import CLASSIFIER_PROMPT, ANSWER_PROMPT as GENERATOR_PROMPT
+from src.chain.prompts import CLASSIFIER_PROMPT, ANSWER_PROMPT as GENERATOR_PROMPT
 from src.api.openfda_client import (
     search_by_brand_name,
     search_by_generic_name,

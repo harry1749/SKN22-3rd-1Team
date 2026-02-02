@@ -4,7 +4,7 @@ from typing import Generator
 from langchain_core.runnables import RunnableLambda
 from langchain_openai import ChatOpenAI
 
-from src.chain.prompts_unified import ANSWER_PROMPT, CLASSIFIER_PROMPT
+from src.chain.prompts import ANSWER_PROMPT, CLASSIFIER_PROMPT
 from src.chain.retriever import (
     check_mutual_contraindication,
     extract_ingredients,

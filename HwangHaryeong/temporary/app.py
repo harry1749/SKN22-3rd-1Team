@@ -1,18 +1,18 @@
-"""FDA 의약품 정보 Q&A - 통합 Streamlit 앱 (app_3.py)"""
+"""FDA 의약품 정보 Q&A - Streamlit 앱"""
 import re
 import streamlit as st
 from src.chain.rag_chain import prepare_context, stream_answer
 from src.config import CLASSIFIER_MODEL, LLM_MODEL
-from src.security import validate_user_input  # app.py의 보안 기능 유지
+from src.security import validate_user_input
 
-# 1. 페이지 설정
+# 페이지 설정
 st.set_page_config(
     page_title="FDA 의약품 정보 Q&A",
     page_icon="💊",
     layout="wide",
 )
 
-# 2. CSS 스타일
+# CSS 스타일
 st.markdown("""
 <style>
     .stChatMessage {
@@ -27,8 +27,9 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# 3. 성분 섹션 후처리 함수
+# 성분 섹션 후처리
 def _truncate_ingredient_section(answer: str) -> str:
+    # 관련 성분 섹션 찾기
     pattern = r"(###\s*💊\s*관련 성분 및 효능\n)(.*?)(?=\n###|\Z)"
     match = re.search(pattern, answer, flags=re.DOTALL)
     if not match:
@@ -38,32 +39,38 @@ def _truncate_ingredient_section(answer: str) -> str:
     body = match.group(2)
     lines = [line for line in body.strip().split('\n') if line.strip()]
     
+    # 성분 라인 추출 (- ** 로 시작하는 라인)
     ingredient_lines = [line for line in lines if line.strip().startswith("- **")]
     
+    # 성분이 4개 미만이면 그대로 반환
     if len(ingredient_lines) < 4:
         return answer
     
     first_three = ingredient_lines[:3]
     remaining = ingredient_lines[3:]
     
+    # 새로운 본문 구성: 처음 3개 성분만
     new_body = "\n".join(first_three)
+    
+    # 나머지 성분을 expander 마커와 함께 추가
     expander_block = (
         f"\n\n**📋 나머지 성분 목록 (외 {len(remaining)}종)**\n\n"
         + "\n".join(remaining)
         + "\n\n---\n"
     )
     
+    # 원본 답변 재구성
     before_section = answer[:match.start()]
     after_section = answer[match.end():]
     
     updated = before_section + header + new_body + expander_block + after_section
     return updated
 
-# 4. 세션 상태 초기화
+# 세션 상태 초기화
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# 5. 사이드바 구성 (app.py의 상세 정보 포함)
+# 사이드바
 with st.sidebar:
     st.title("💊 FDA 의약품 Q&A")
     st.markdown("---")
@@ -110,23 +117,25 @@ with st.sidebar:
         st.session_state.messages = []
         st.rerun()
 
-# 6. 메인 영역 제목
+# 메인 영역
 st.title("💊 FDA 의약품 정보 Q&A")
 st.caption("OpenFDA 데이터베이스 실시간 검색 기반")
 
-# 7. 대화 기록 표시 (상세 출처 표시 로직 포함)
+# 대화 기록 표시
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         content = message["content"]
         
-        # 나머지 성분 부분을 expander로 분리하여 렌더링
+        # 나머지 성분 부분을 expander로 분리
         if "**📋 나머지 성분 목록" in content:
             parts = content.split("**📋 나머지 성분 목록")
             st.markdown(parts[0], unsafe_allow_html=True)
             
+            # expander 부분 추출 및 렌더링
             expander_content = "**📋 나머지 성분 목록" + parts[1].split("---")[0]
             remaining_content = "---".join(parts[1].split("---")[1:]) if "---" in parts[1] else ""
             
+            # 제목과 개수 추출
             title_line = expander_content.split("\n")[0]
             items = "\n".join([line for line in expander_content.split("\n")[1:] if line.strip()])
             
@@ -138,42 +147,48 @@ for message in st.session_state.messages:
         else:
             st.markdown(content, unsafe_allow_html=True)
         
-        # Assistant 메시지인 경우 검색 정보와 원본 데이터 표시 (app.py 기능)
-        if message["role"] == "assistant":
-            if "search_info" in message:
-                info = message["search_info"]
-                st.caption(f"🔍 검색: {info['category']} → \"{info['keyword']}\"")
+        # 출처 정보 표시
+        if message["role"] == "assistant" and "search_info" in message:
+            info = message["search_info"]
+            st.caption(f"🔍 검색: {info['category']} → \"{info['keyword']}\"")
 
-            if "sources" in message and message["sources"]:
-                with st.expander("📋 원본 데이터 보기"):
-                    for i, src in enumerate(message["sources"][:3], 1):
-                        openfda = src.get("openfda", {})
-                        brand = openfda.get("brand_name", ["N/A"])[0] if openfda.get("brand_name") else "N/A"
-                        generic = openfda.get("generic_name", ["N/A"])[0] if openfda.get("generic_name") else "N/A"
-                        manufacturer = openfda.get("manufacturer_name", ["N/A"])[0] if openfda.get("manufacturer_name") else "N/A"
-                        st.markdown(f"**{i}. {brand}** ({generic})")
-                        st.caption(f"제조사: {manufacturer}")
+        if message["role"] == "assistant" and "sources" in message and message["sources"]:
+            with st.expander("📋 원본 데이터 보기"):
+                for i, src in enumerate(message["sources"][:3], 1):
+                    openfda = src.get("openfda", {})
+                    brand = openfda.get("brand_name", ["N/A"])
+                    brand = brand[0] if brand else "N/A"
+                    generic = openfda.get("generic_name", ["N/A"])
+                    generic = generic[0] if generic else "N/A"
+                    manufacturer = openfda.get("manufacturer_name", ["N/A"])
+                    manufacturer = manufacturer[0] if manufacturer else "N/A"
+                    st.markdown(f"**{i}. {brand}** ({generic})")
+                    st.caption(f"제조사: {manufacturer}")
 
-# 8. 공통 답변 생성 로직 함수 (중복 제거를 위해 정의)
-def process_user_input(user_query):
-    # 입력 검증 (보안)
-    validation = validate_user_input(user_query)
+# 예시 질문 버튼 클릭 처리
+if "pending_question" in st.session_state:
+    user_input = st.session_state.pending_question
+    del st.session_state.pending_question
+
+    # 입력 검증
+    validation = validate_user_input(user_input)
     if not validation.is_valid:
         st.warning(f"입력 오류: {validation.error_message}")
-        return
-
+        st.stop()
     safe_input = validation.sanitized_input
 
-    # 사용자 메시지 추가 및 표시
+    # 사용자 메시지 추가
     st.session_state.messages.append({"role": "user", "content": safe_input})
+
     with st.chat_message("user"):
         st.markdown(safe_input)
 
-    # 답변 생성 및 표시
+    # 답변 생성
     with st.chat_message("assistant"):
         with st.spinner("OpenFDA 데이터베이스 검색 중..."):
             context_data = prepare_context(safe_input)
 
+        # 스트리밍 답변
         response_placeholder = st.empty()
         full_response = ""
 
@@ -184,7 +199,7 @@ def process_user_input(user_query):
         full_response = _truncate_ingredient_section(full_response)
         response_placeholder.markdown(full_response, unsafe_allow_html=True)
 
-    # 메시지 저장 (출처 정보 포함)
+    # 어시스턴트 메시지 저장
     st.session_state.messages.append({
         "role": "assistant",
         "content": full_response,
@@ -196,13 +211,45 @@ def process_user_input(user_query):
     })
     st.rerun()
 
-# 9. 입력 이벤트 처리
-# 예시 질문 클릭 시
-if "pending_question" in st.session_state:
-    pending_q = st.session_state.pending_question
-    del st.session_state.pending_question
-    process_user_input(pending_q)
-
-# 채팅창 입력 시
+# 채팅 입력
 if user_input := st.chat_input("약품이나 증상에 대해 질문하세요..."):
-    process_user_input(user_input)
+    # 입력 검증
+    validation = validate_user_input(user_input)
+    if not validation.is_valid:
+        st.warning(f"입력 오류: {validation.error_message}")
+        st.stop()
+    safe_input = validation.sanitized_input
+
+    # 사용자 메시지 추가
+    st.session_state.messages.append({"role": "user", "content": safe_input})
+
+    with st.chat_message("user"):
+        st.markdown(safe_input)
+
+    # 답변 생성
+    with st.chat_message("assistant"):
+        with st.spinner("OpenFDA 데이터베이스 검색 중..."):
+            context_data = prepare_context(safe_input)
+
+        # 스트리밍 답변
+        response_placeholder = st.empty()
+        full_response = ""
+
+        for chunk in stream_answer(context_data):
+            full_response += chunk
+            response_placeholder.markdown(full_response + "▌", unsafe_allow_html=True)
+
+        full_response = _truncate_ingredient_section(full_response)
+        response_placeholder.markdown(full_response, unsafe_allow_html=True)
+
+    # 어시스턴트 메시지 저장
+    st.session_state.messages.append({
+        "role": "assistant",
+        "content": full_response,
+        "sources": context_data.get("raw_results", [])[:5],
+        "search_info": {
+            "category": context_data["category"],
+            "keyword": context_data["keyword"],
+        }
+    })
+    st.rerun()

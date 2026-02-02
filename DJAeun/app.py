@@ -83,7 +83,7 @@ st.caption("OpenFDA 데이터베이스 실시간 검색 기반")
 # 대화 기록 표시
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
-        st.markdown(message["content"])
+        st.markdown(message["content"], unsafe_allow_html=True)
 
         # 출처 정보 표시
         if message["role"] == "assistant" and "search_info" in message:
@@ -125,9 +125,9 @@ if "pending_question" in st.session_state:
 
         for chunk in stream_answer(context_data):
             full_response += chunk
-            response_placeholder.markdown(full_response + "▌")
+            response_placeholder.markdown(full_response + "▌", unsafe_allow_html=True)
 
-        response_placeholder.markdown(full_response)
+        response_placeholder.markdown(full_response, unsafe_allow_html=True)
 
         # 검색 정보 표시
         st.caption(f"🔍 검색: {context_data['category']} → \"{context_data['keyword']}\"")
@@ -163,9 +163,9 @@ if user_input := st.chat_input("약품이나 증상에 대해 질문하세요...
 
         for chunk in stream_answer(context_data):
             full_response += chunk
-            response_placeholder.markdown(full_response + "▌")
+            response_placeholder.markdown(full_response + "▌", unsafe_allow_html=True)
 
-        response_placeholder.markdown(full_response)
+        response_placeholder.markdown(full_response, unsafe_allow_html=True)
 
         # 검색 정보 표시
         st.caption(f"🔍 검색: {context_data['category']} → \"{context_data['keyword']}\"")

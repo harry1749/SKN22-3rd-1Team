@@ -3,7 +3,7 @@ import json
 from typing import Generator
 from langchain_openai import ChatOpenAI
 
-from src.chain.prompts import CLASSIFIER_PROMPT, GENERATOR_PROMPT
+from src.chain.prompts_unified import CLASSIFIER_PROMPT, ANSWER_PROMPT as GENERATOR_PROMPT
 from src.api.openfda_client import (
     search_by_brand_name,
     search_by_generic_name,
@@ -86,6 +86,7 @@ def prepare_context(question: str) -> dict:
         "keyword": classification["keyword"],
         "context": context,
         "raw_results": raw_results,
+        "dur_context": "(OpenFDA 데이터에서는 병용금지(DUR) 정보를 제공하지 않습니다.)",
     }
 
 
@@ -101,6 +102,7 @@ def stream_answer(context_data: dict) -> Generator[str, None, None]:
         category=context_data["category"],
         keyword=context_data["keyword"],
         context=context_data["context"],
+        dur_context=context_data["dur_context"],
     )
 
     for chunk in llm.stream(prompt_value):
@@ -119,6 +121,7 @@ def generate_answer(context_data: dict) -> str:
         category=context_data["category"],
         keyword=context_data["keyword"],
         context=context_data["context"],
+        dur_context=context_data["dur_context"],
     )
 
     result = llm.invoke(prompt_value)

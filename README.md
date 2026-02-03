@@ -32,9 +32,11 @@
 - [기술 스택](#-기술-스택)
 - [프로젝트 구조](#-프로젝트-구조)
 - [시스템 아키텍처](#-시스템-아키텍처)
+- [단계별 상세 설명](#단계별-상세-설명)
 - [실행 방법](#-실행-방법)
 - [질문 예시](#-질문-예시)
 - [주요 설정](#-주요-설정)
+- [팀원 소개](#-팀원-소개)
 
 ---
 
@@ -43,7 +45,7 @@
 | 분류 | 기술 | 설명 |
 |:---:|:---:|:---|
 | 🖥️ **UI** | Streamlit | Chat Interface 제공 |
-| 🤖 **Classifier** | GPT-4.1-nano | 질문 의도 분류 (Router) |
+| 🤖 **Classifier** | GPT-5-nano | 질문 의도 분류 (Router) |
 | ✍️ **Generator** | GPT-4.1-mini | 최종 답변 생성 |
 | ☁️ **Data Source** | OpenFDA API | 실시간 의약품 라벨 정보 (Labeling) |
 | 🔗 **Orchestration** | LangChain | RAG 파이프라인 구성 |
@@ -141,16 +143,55 @@ graph TD
 ### 🧩 주요 모듈 상세 설명
 
 - **애플리케이션 계층 (`app.py`)**: 사용자 인터페이스 메인 진입점입니다. `src.security`를 통해 입력을 검증하고, `rag_chain`을 통해 답변을 생성합니다.
+
 - **보안 계층 (`src/security`)**: `input_validator.py`를 통한 Prompt Injection 및 과도한 길이, 특수문자 등을 필터링합니다.
+
 - **로직 및 최적화 계층 (`src`)**:
   - `chain/rag_chain.py`: Router 패턴 기반 RAG 파이프라인.
   - `chain/optimized_rag_chain.py`: 검색 최적화 및 Re-ranking 적용.
   - `optimization_config.py`: 실험을 위한 다양한 파라미터 정의.
   - `optimizations.py`: 실제 최적화 로직 수행.
+
 - **데이터 계층 (`src/api`)**: OpenFDA REST API와 통신 클라이언트 및 응답 데이터 포매터.
 
 ---
 
+## 단계별 상세 설명
+
+### Phase 1: Classifier (Router)
+- **파일**: [prompts.py](/src/chain/prompts.py) (`CLASSIFIER_PROMPT`)
+- **역할**: 
+    - LLM(GPT-5-nano)이 사용자의 질문을 분석하여 `category`와 `keyword`를 추출합니다.
+    - 한국어 증상 키워드를 영어 의학 용어로 번역하여 Search Engine(OpenFDA)의 정확도를 높입니다.
+    - Few-shot 예시를 통해 모호한 입력에 대한 대응 능력을 확보합니다.
+
+### Phase 2: Dispatcher (Logic)
+- **파일**: [rag_chain.py](/src/chain/rag_chain.py) (`search_openfda`)
+- **역할**: 
+    - 분류 결과에 따라 실제 API 호출 함수를 매칭합니다.
+    - `invalid` 카테고리일 경우 검색을 생략하고 즉시 응답 생성 단계로 넘깁니다.
+
+### Phase 3: Data Retrieval (Search Engine)
+- **파일**: [openfda_client.py](/src/api/openfda_client.py)
+- **역할**: 
+    - 라우팅된 경로에 따라 OpenFDA API의 특정 필드(`openfda.brand_name`, `openfda.generic_name`, `indications_and_usage`)를 쿼리합니다.
+
+### Phase 4: Generator (Synthesis)
+- **파일**: [prompts.py](/src/chain/prompts.py) (`ANSWER_PROMPT`)
+- **역할**: 
+    - LLM(GPT-4-mini)이 검색된 복잡한 JSON 데이터를 사용자 친화적인 한국어 마크다운 형식으로 변환합니다.
+    - 성분별 효능 정리 및 성분명 병기(English)를 통해 범용성을 높입니다.
+
+---
+
+## Router Pattern의 장점
+1.  **정확도 향상**: 질문의 의도에 맞는 API 필드를 직접 쿼리함으로써 관련성 높은 데이터 확보.
+
+2.  **비용 최적화**: 무의미한 질문에 대해 검색 과정을 생략함으로써 토큰 소비 및 대기 시간 단축.
+
+3.  **유연한 확장**: 새로운 검색 경로(PDF 문서 등)를 추가할 때 라우터 로직만 수정하면 됨.
+
+---
 ## 🚀 실행 방법
 
 ### 1️⃣ 필수 패키지 설치
@@ -204,8 +245,31 @@ streamlit run app.py
 
 ---
 
+## 👥 팀원 소개
+
+| 이름 | GitHub |
+|:---:|:---:|
+| 김희준 | [@heejoon-91](https://github.com/heejoon-91) |
+| 황하령 | [@harry1749](https://github.com/harry1749) |
+| 이도훈 | [@LeeDohun-hub](https://github.com/LeeDohun-hub) |
+| 이준서 | [@Leejunseo84](https://github.com/Leejunseo84) |
+| 엄형은 | [@DJAeun](https://github.com/DJAeun) |
+
+**김희준**: "LLM으로부터 의도한 해답을 이끌어내기 위한 워크플로우 설계의 중요성을 깊이 학습할 수 있었던 소중한 기회였습니다. 이번에 구현한 Chain 기반의 로직을 발전시켜, 다음 프로젝트에서는 보다 능동적인 문제 해결이 가능한 Agent 시스템을 구축해 보고 싶습니다."
+
+**황하령**: "LLM한테 정확한 답변 받는 게 생각보다 까다롭더라고요. Chain 구조로 구현해봤는데, 다음엔 Agent 방식도 도전해보고 싶습니다!"
+
+**이도훈**: "많은 역할과 기회를 주셔서 감사합니다. 이번 프로젝트 경험을 바탕으로 앞으로 개인적으로 만들어보고 싶은 아이디어가 샘솟아쳤습니다. 좋은 경험을 주셔서 감사합니다."
+
+**이준서**: "이번 프로젝트를 진행하면서 LLM에게 원하는 대답을 얻기는 정말 어렵다는 것을 알 수 있었습니다. 이번에는 Chain을 구성해서 진행했었지만 나중에 기회가 된다면 또 다른 주제를 Agent로 구현을 해보고 싶습니다 감사합니다."
+
+**엄형은**: "Router 패턴으로 RAG 시스템 만들면서 프롬프트 엔지니어링의 중요성을 체감했습니다. LLM한테 원하는 답 받기 생각보다 어렵네요. 팀원들과 함께해서 재밌었습니다!"
+
+---
+
+
 <div align="center">
-  
+
 **SKN22-3rd-1Team**
 
 </div>

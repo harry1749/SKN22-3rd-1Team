@@ -1,9 +1,12 @@
-"""FDA 의약품 정보 Q&A - 통합 Streamlit 앱 (app_3.py)"""
+"""FDA 의약품 정보 Q&A - 통합 Streamlit 앱"""
 import re
 import streamlit as st
 from src.chain.rag_chain import prepare_context, stream_answer
-from src.config import CLASSIFIER_MODEL, LLM_MODEL
-from src.security import validate_user_input  # app.py의 보안 기능 유지
+from src.config import CLASSIFIER_MODEL, LLM_MODEL, validate_env
+from src.security import validate_user_input
+
+# 환경 변수 검증
+validate_env()
 
 # 1. 페이지 설정
 st.set_page_config(

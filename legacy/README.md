@@ -1,6 +1,6 @@
 <div align="center">
 
-# 💊 OpenFDA 의약품 정보 Q&A (DJAeun)
+# 💊 OpenFDA 의약품 정보 Q&A
 
 [![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
 [![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white)](https://streamlit.io)
@@ -53,7 +53,7 @@
 ## 📁 프로젝트 구조
 
 ```
-DJAeun/
+SKN22-3rd-1Team/
 ├── 🚀 app.py                    # Streamlit 메인 앱
 ├── 📋 requirements.txt          # 패키지 의존성
 └── 📂 src/
@@ -119,7 +119,6 @@ graph TD
 ### 1️⃣ 필수 패키지 설치
 
 ```bash
-cd DJAeun
 pip install -r requirements.txt
 ```
 
@@ -170,6 +169,6 @@ streamlit run app.py
 
 <div align="center">
   
-**SKN22-3rd-1Team / DJAeun**
+**SKN22-3rd-1Team**
 
 </div>

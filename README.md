@@ -53,17 +53,24 @@
 ## 📁 프로젝트 구조
 
 ```
-DJAeun/
+.
 ├── 🚀 app.py                    # Streamlit 메인 앱
 ├── 📋 requirements.txt          # 패키지 의존성
-└── 📂 src/
+├── 📂 src/
     ├── ⚙️ config.py             # 환경 설정 (API Key 등)
     ├── 📡 api/
     │   ├── openfda_client.py    # OpenFDA API 호출 클라이언트
     │   └── formatter.py         # JSON 응답 데이터 포매팅
-    └── ⛓️ chain/
-        ├── rag_chain.py         # RAG 파이프라인 (분류 -> 검색 -> 생성)
-        └── prompts.py           # LLM 프롬프트 템플릿
+    ├── ⛓️ chain/
+    │   ├── rag_chain.py         # RAG 파이프라인 (분류 -> 검색 -> 생성)
+    │   ├── optimized_rag_chain.py # 최적화된 RAG 파이프라인
+    │   └── prompts.py           # LLM 프롬프트 템플릿
+    ├── 🛡️ security/
+    │   ├── input_validator.py   # 입력값 검증
+    │   └── response_validator.py # 응답 검증
+    └── 🛠️ utils/
+        └── langsmith_config.py  # LangSmith 설정
+└── 📊 evaluation/           # 평가 관련 파일
 ```
 
 ---
@@ -119,7 +126,6 @@ graph TD
 ### 1️⃣ 필수 패키지 설치
 
 ```bash
-cd DJAeun
 pip install -r requirements.txt
 ```
 
@@ -170,6 +176,6 @@ streamlit run app.py
 
 <div align="center">
   
-**SKN22-3rd-1Team / DJAeun**
+**SKN22-3rd-1Team**
 
 </div>
